@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Waiting Room - Chit-Chat</title>
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-900 text-white flex items-center justify-center h-screen">
+
+<div class="text-center">
+    <h1 class="text-4xl font-bold text-indigo-400 mb-4">Chit-Chat</h1>
+    <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-400 mx-auto mb-4"></div>
+    <p class="text-gray-300" id="status">Waiting for Admin Approval...</p>
+</div>
+
+<script>
+const socket = io();
+const roomId = "<%= roomId %>";
+
+// Ask to join
+socket.emit("join_room", { roomId });
+
+socket.on("join_pending", msg => {
+    document.getElementById("status").textContent = msg;
+});
+
+// Approved → redirect to chat
+socket.on("join_success", data => {
+    window.location.href = `/chat?roomId=${data.roomId}`;
+});
+
+// Denied
+socket.on("join_denied", msg => {
+    alert(msg);
+    window.location.href = "/";
+});
+</script>
+
+</body>
+</html>

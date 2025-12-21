@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatroom Entry</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom font import for a modern look */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Dark Card Shadow Effect for visual depth */
+        .card-shadow {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+        }
+        /* Custom hover for a "lift" effect */
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <header class="bg-gray-800 shadow-lg border-b border-gray-700">
+        <nav class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
+            
+            <!-- App Name/Brand -->
+            <div class="flex-shrink-0">
+                <img src="/img/Chit-ChatBlue.png" alt="Chit-Chat Logo" width="50" height="50" class="inline-block align-middle mr-2">
+                <a href="#" class="text-2xl font-extrabold tracking-wider text-indigo-400">
+                    Chit-Chat
+                </a>
+            </div>
+
+            <!-- Navigation Links -->
+            <div class="flex items-center space-x-4" method="GET" action="/postlogin">
+                <a href="/postlogin" class="text-gray-300 hover:text-indigo-400 font-medium transition duration-150 p-2 rounded-lg hover:bg-gray-700">
+                    Home
+                </a>
+                <!-- You could add more links here if needed -->
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content Area (Cards) -->
+    <main class="flex-grow flex items-center justify-center p-4">
+        <div class="max-w-4xl w-full mx-auto">
+            <h1 class="text-3xl font-bold text-center mb-10 text-indigo-400">Welcome to the Chat Hub</h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                <!-- Card 1: Create a New Chatroom -->
+                <div id="create-card" class="bg-gray-800 card-shadow card-hover transition-all duration-300 rounded-xl overflow-hidden shadow-2xl border border-gray-700">
+                    
+                    <!-- Image Placeholder -->
+                    <div class="h-40 bg-indigo-600 flex items-center justify-center">
+                        <img src="/img/friends.jpg" 
+                             alt="Image of friends gathering" 
+                             class="w-full h-full object-cover"
+                             onerror="this.onerror=null; this.src='https://placehold.co/600x160/4f46e5/ffffff?text=Social+Chatroom';"
+                        />
+                    </div>
+
+                    <div class="p-6">
+                        <h2 class="text-2xl font-semibold mb-2 text-indigo-400">Create a New Chatroom</h2>
+                        <p class="text-gray-400 mb-6 text-sm">Start a fresh conversation. Instantly generate a unique Room ID to share with your friends.</p>
+                        
+                        <button 
+                            onclick="handleCreateRoom()"
+                            class="w-full py-3 px-4 rounded-lg font-bold text-white bg-indigo-600 transition-all duration-300 transform 
+                                    hover:bg-indigo-700 hover:scale-[1.02] active:scale-100 shadow-md shadow-indigo-500/40 
+                                    focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50"
+                        >
+                            Create
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Card 2: Join a Chatroom -->
+                <div id="join-card" class="bg-gray-800 card-shadow card-hover transition-all duration-300 rounded-xl shadow-2xl border border-gray-700">
+                    <div class="p-6">
+                        <h2 class="text-2xl font-semibold mb-4 text-indigo-400">Join a Chatroom</h2>
+                        
+                        <label for="room-id" class="block text-sm font-medium text-gray-300 mb-2">Insert Room ID</label>
+                        <input 
+                            type="text" 
+                            id="room-id" 
+                            placeholder="e.g., unique-chat-id-789"
+                            class="w-full p-3 mb-6 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:border-indigo-500 focus:ring focus:ring-indigo-500 focus:ring-opacity-50 transition duration-150"
+                        >
+                        
+                        <button 
+                            onclick="handleJoinRoom()"
+                            class="w-full py-3 px-4 rounded-lg font-bold text-white bg-indigo-600 transition-all duration-300 transform 
+                                    hover:bg-indigo-700 hover:scale-[1.02] active:scale-100 shadow-md shadow-indigo-500/40 
+                                    focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50"
+                        >
+                            Join
+                        </button>
+                        
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Feedback Message Box (Replaces alert()) -->
+            <div id="message-box" class="mt-8 mx-auto max-w-md hidden p-4 rounded-lg bg-red-800 border border-red-700 text-white shadow-xl text-center" role="alert">
+                <p id="message-text"></p>
+            </div>
+
+        </div>
+    </main>
+
+
+   <script src="/socket.io/socket.io.js"></script>
+
+<script>
+    // client chatroom.ejs
+const socket = io({ withCredentials: true });
+
+    const roomIdInput = document.getElementById('room-id');
+    const messageBox = document.getElementById('message-box');
+    const messageText = document.getElementById('message-text');
+
+    // Function to display a temporary message
+    function showMessage(text, type = 'info') {
+        messageText.textContent = text;
+        messageBox.className = 'mt-8 mx-auto max-w-md p-4 rounded-lg shadow-xl text-center block transition-all duration-300';
+        
+        messageBox.classList.remove('bg-red-800', 'border-red-700', 'bg-green-700', 'border-green-600', 'bg-indigo-700', 'border-indigo-600', 'hidden');
+
+        if (type === 'error') {
+            messageBox.classList.add('bg-red-800', 'border-red-700');
+        } else if (type === 'success') {
+            messageBox.classList.add('bg-green-700', 'border-green-600');
+        } else {
+            messageBox.classList.add('bg-indigo-700', 'border-indigo-600');
+        }
+
+        setTimeout(() => messageBox.classList.add('hidden'), 4000);
+    }
+
+    // =======================================================
+    // CREATE ROOM  (no username sent)
+    // =======================================================
+
+    function handleCreateRoom() {
+        showMessage("Creating room...", "info");
+        socket.emit("create_room");
+    }
+
+    socket.on("error_message", (msg) => {
+        showMessage(msg, "error");
+    });
+
+
+
+    // =======================================================
+    // JOIN ROOM  (no username sent)
+    // =======================================================
+    function handleJoinRoom() {
+        const roomId = roomIdInput.value.trim();
+
+        if (!roomId) {
+            showMessage("Please enter a valid Room ID.", 'error');
+            return;
+        }
+
+        showMessage(`Requesting to join room ${roomId}...`, 'info');
+
+        socket.emit('join_room', { roomId });   // 👈 username removed
+    }
+
+    // =======================================================
+    // SOCKET LISTENERS
+    // =======================================================
+
+    // A. Room Created
+    socket.on("room_created", ({ roomId }) => {
+    window.location.href = `/chat?roomId=${roomId}`;
+});
+
+
+    // B. Join Pending
+    socket.on('join_pending', (msg) => {
+        showMessage(msg, 'info');
+        const roomId = roomIdInput.value.trim();
+        window.location.href = `/waitingroom?roomId=${roomId}`;
+    });
+
+    // C. Errors
+    socket.on('error', (msg) => {
+        showMessage(`Error: ${msg}`, 'error');
+    });
+
+</script>
+
+</body>
+</html>

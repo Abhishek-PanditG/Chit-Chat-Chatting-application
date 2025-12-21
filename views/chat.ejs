@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chit-Chat | Room <%= roomId %></title>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-900 text-white flex flex-col h-screen">
+
+<!-- NAVBAR -->
+<header class="bg-gray-800 p-4 flex justify-between items-center">
+    <h2 class="text-indigo-400 font-bold text-lg">
+        Chit-Chat <span class="text-gray-400 text-sm">| Room ID:</span>
+        <span class="text-white font-mono"><%= roomId %></span>
+    </h2>
+    <span class="text-sm text-gray-300">Logged in as <b><%= username %></b></span>
+</header>
+
+<div class="flex flex-1 overflow-hidden">
+
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-gray-800 p-4 overflow-y-auto">
+
+        <% if (username === admin) { %>
+        <div id="admin-controls" class="mb-4">
+            <h3 class="text-indigo-400 uppercase text-sm mb-2">Join Requests</h3>
+            <div id="request-list" class="space-y-2"></div>
+        </div>
+        <% } %>
+
+        <h3 class="text-indigo-400 uppercase text-sm mb-2">Participants</h3>
+        <ul id="participants-list" class="space-y-1"></ul>
+    </aside>
+
+    <!-- CHAT AREA -->
+    <main class="flex-1 flex flex-col">
+        <div id="messages" class="flex-1 p-4 overflow-y-auto space-y-2"></div>
+
+        <div class="flex p-4 gap-2 bg-gray-800">
+            <input id="msg-input"
+                   class="flex-1 p-2 rounded bg-gray-700 text-white"
+                   placeholder="Type message..." />
+            <button id="send-btn" class="bg-indigo-600 px-4 rounded">Send</button>
+        </div>
+    </main>
+</div>
+
+<script>
+const socket = io();
+
+const roomId = "<%= roomId %>";
+const username = "<%= username %>";
+const isAdmin = "<%= admin %>" === username;
+
+// Join room ONCE
+socket.emit("join_room", { roomId });
+
+// ---------------- PARTICIPANTS ----------------
+socket.on("participants_update", data => {
+    const { users, admin } = data;
+    const list = document.getElementById("participants-list");
+    list.innerHTML = "";
+    users.forEach(u => {
+        const li = document.createElement("li");
+        li.textContent = u + (u === admin ? " (Admin)" : "");
+        list.appendChild(li);
+    });
+});
+
+// ---------------- MESSAGES ----------------
+const messagesDiv = document.getElementById("messages");
+
+socket.on("chat_history", history => {
+    messagesDiv.innerHTML = "";
+    history.forEach(m => addMessage(m.sender, m.text));
+});
+
+socket.on("new_message", msg => {
+    addMessage(msg.sender, msg.text);
+});
+
+function addMessage(sender, text) {
+    const div = document.createElement("div");
+    div.innerHTML = `<strong>${sender}:</strong> ${text}`;
+    messagesDiv.appendChild(div);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+// Send message
+const msgInput = document.getElementById("msg-input");
+
+document.getElementById("send-btn").onclick = () => {
+    const text = msgInput.value.trim();
+    if (!text) return;
+
+    socket.emit("send_message", { roomId, text });
+    msgInput.value = "";
+};
+
+// ---------------- ADMIN JOIN REQUESTS ----------------
+if (isAdmin) {
+    socket.on("join_request", ({username, socketId}) => {
+        const div = document.createElement("div");
+        div.id = `req-${username}`;
+        div.innerHTML = `
+            <strong>${username}</strong><br/>
+            <button onclick="approve('${username}')">Accept</button>
+            <button onclick="deny('${username}')">Deny</button>
+        `;
+        document.getElementById("request-list").appendChild(div);
+    });
+}
+
+function approve(username) {
+    socket.emit("admin_decision", { roomId, targetUsername: username, action: "accept" });
+    document.getElementById(`req-${username}`).remove();
+}
+
+function deny(username) {
+    socket.emit("admin_decision", { roomId, targetUsername: username, action: "deny" });
+    document.getElementById(`req-${username}`).remove();
+}
+</script>
+
+</body>
+</html>
