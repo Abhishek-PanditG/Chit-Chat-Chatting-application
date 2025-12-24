@@ -4,19 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chatroom Entry</title>
-    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Custom font import for a modern look */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
         }
-        /* Dark Card Shadow Effect for visual depth */
         .card-shadow {
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
         }
-        /* Custom hover for a "lift" effect */
         .card-hover:hover {
             transform: translateY(-4px);
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
@@ -42,12 +38,11 @@
                 <a href="/postlogin" class="text-gray-300 hover:text-indigo-400 font-medium transition duration-150 p-2 rounded-lg hover:bg-gray-700">
                     Home
                 </a>
-                <!-- You could add more links here if needed -->
             </div>
         </nav>
     </header>
 
-    <!-- Main Content Area (Cards) -->
+    
     <main class="flex-grow flex items-center justify-center p-4">
         <div class="max-w-4xl w-full mx-auto">
             <h1 class="text-3xl font-bold text-center mb-10 text-indigo-400">Welcome to the Chat Hub</h1>
@@ -145,9 +140,7 @@ const socket = io({ withCredentials: true });
         setTimeout(() => messageBox.classList.add('hidden'), 4000);
     }
 
-    // =======================================================
-    // CREATE ROOM  (no username sent)
-    // =======================================================
+    //Create Room
 
     function handleCreateRoom() {
         showMessage("Creating room...", "info");
@@ -160,9 +153,7 @@ const socket = io({ withCredentials: true });
 
 
 
-    // =======================================================
-    // JOIN ROOM  (no username sent)
-    // =======================================================
+    // Join Room
     function handleJoinRoom() {
         const roomId = roomIdInput.value.trim();
 
@@ -176,9 +167,7 @@ const socket = io({ withCredentials: true });
         socket.emit('join_room', { roomId });   // 👈 username removed
     }
 
-    // =======================================================
-    // SOCKET LISTENERS
-    // =======================================================
+    //Socket Event Handlers
 
     // A. Room Created
     socket.on("room_created", ({ roomId }) => {

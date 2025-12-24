@@ -2,9 +2,7 @@ const Room = require("../models/roommodel");
 const { v4: uuidv4 } = require("uuid");
 const jwt = require("jsonwebtoken");
 
-/* =========================
-   HELPER
-========================= */
+//Helpers
 function getUsernameFromSocket(socket) {
     try {
         const cookieHeader = socket.request.headers.cookie;
@@ -25,10 +23,7 @@ function getUsernameFromSocket(socket) {
 }
 
 const roomController = {
-
-    /* =========================
-       CREATE ROOM
-    ========================= */
+    //Create Room
     createRoom: async (io, socket) => {
         try {
             const username = getUsernameFromSocket(socket);
@@ -58,9 +53,7 @@ const roomController = {
         }
     },
 
-    /* =========================
-       JOIN ROOM
-    ========================= */
+    // Join Room
     joinRoom: async (io, socket, { roomId }) => {
         try {
             const username = getUsernameFromSocket(socket);
@@ -69,7 +62,7 @@ const roomController = {
             const room = await Room.findOne({ roomId });
             if (!room) return socket.emit("error_message", "Room not found");
 
-            /* ---- ADMIN ---- */
+            //Admin Join
             if (room.admin === username) {
                 socket.join(roomId);
 
@@ -80,7 +73,7 @@ const roomController = {
                 return;
             }
 
-            /* ---- ALREADY APPROVED ---- */
+            //Already a participant
             if (room.participants.includes(username)) {
                 socket.join(roomId);
 
@@ -91,7 +84,7 @@ const roomController = {
                 return;
             }
 
-            /* ---- PREVENT DUPLICATE PENDING ---- */
+            //Prevention of Duplicate Pending Requests
             const alreadyPending = room.pending.some(p => p.username === username);
             if (alreadyPending) {
                 const pendingUser = room.pending.find(p => p.username === username);
@@ -101,13 +94,13 @@ const roomController = {
                 return;
             }
 
-            /* ---- ADD TO PENDING ---- */
+            //New Join Request
             room.pending.push({ username, socketId: socket.id });
             await room.save();
 
             socket.emit("join_pending", "Waiting for admin approval");
 
-            /* ---- NOTIFY ADMIN ---- */
+            //Notify Admin
             const adminSocket = [...io.sockets.sockets.values()]
                 .find(s => getUsernameFromSocket(s) === room.admin);
 
@@ -124,9 +117,7 @@ const roomController = {
         }
     },
 
-    /* =========================
-       ADMIN DECISION
-    ========================= */
+    //Admin Actions
     handleAdminAction: async (io, socket, { roomId, targetUsername, action }) => {
         try {
             const adminUsername = getUsernameFromSocket(socket);
@@ -155,7 +146,7 @@ const roomController = {
     if (targetSocket) {
         targetSocket.join(roomId);
 
-        // 🔑 CRITICAL EVENTS
+        //CRITICAL EVENTS
         targetSocket.emit("join_success", { roomId });
         targetSocket.emit("role_info", { role: "member" });
         targetSocket.emit("your_username", targetUsername);
@@ -179,9 +170,7 @@ const roomController = {
         }
     },
 
-    /* =========================
-       SEND MESSAGE
-    ========================= */
+    // Send Message
     sendMessage: async (io, socket, { roomId, text }) => {
         try {
             const username = getUsernameFromSocket(socket);
@@ -204,7 +193,25 @@ const roomController = {
         } catch (err) {
             console.error(err);
         }
+    },
+
+    LeaveRoom: async (io, socket, {roomId, username}) => {
+        try{
+            const room = await Room.findOne({roomId});
+            if(!room) return;
+
+            room.participants = room.participants.filter(user => user !== username);
+            await room.save();
+
+            socket.leave(roomId);
+
+            io.to(roomId).emit("participants_update", { users: room.participants, admin: room.admin });
+        } catch (err) {
+            console.error(err);
+        }
     }
+
 };
+
 
 module.exports = roomController;

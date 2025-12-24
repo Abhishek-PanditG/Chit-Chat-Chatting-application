@@ -13,6 +13,7 @@
 
 <!-- NAVBAR -->
 <header class="bg-gray-800 p-4 flex justify-between items-center">
+    <img src="/img/Chit-ChatBlue.png" alt="Chit-Chat Logo" width="40" height="40" class="inline-block align-middle mr-2">
     <h2 class="text-indigo-400 font-bold text-lg">
         Chit-Chat <span class="text-gray-400 text-sm">| Room ID:</span>
         <span class="text-white font-mono"><%= roomId %></span>
@@ -34,6 +35,10 @@
 
         <h3 class="text-indigo-400 uppercase text-sm mb-2">Participants</h3>
         <ul id="participants-list" class="space-y-1"></ul>
+
+        <button id="leave-room-btn" class="mt-6 w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded">
+            Leave Room 
+        </button>
     </aside>
 
     <!-- CHAT AREA -->
@@ -124,6 +129,12 @@ function deny(username) {
     socket.emit("admin_decision", { roomId, targetUsername: username, action: "deny" });
     document.getElementById(`req-${username}`).remove();
 }
+
+document.getElementById("leave-room-btn").onclick = () => {
+    socket.emit("Leave_Room", { roomId, username });
+    window.location.href = "/chatroom";
+}
+
 </script>
 
 </body>
