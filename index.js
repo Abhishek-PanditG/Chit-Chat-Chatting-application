@@ -24,13 +24,11 @@ mongoose.connect(process.env.MONGO_URI)
 //Socket Connection
 const io = new Server(server, {
     cors: {
-        origin: "*",
         methods: ["GET", "POST"]
     }
 });
 
 io.on("connection", (socket) => {
-    console.log("New socket connected:", socket.id);
     roomroutes(io, socket);
 });
 
@@ -51,6 +49,7 @@ app.get("/", (req, res) => res.render("index"));
 app.get("/login", (req, res) => res.render("login", { error: null }));
 app.get("/register", (req, res) => res.render("register", { error: null }));
 app.get("/chatroom", (req, res) => res.render("chatroom"));
+app.get("/postlogin", (req, res) => res.render("postlogin"));
 // Example: GET /chat
 app.get("/chat", async (req, res) => {
     const { roomId } = req.query;

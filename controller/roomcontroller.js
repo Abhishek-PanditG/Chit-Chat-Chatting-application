@@ -200,6 +200,17 @@ const roomController = {
             const room = await Room.findOne({roomId});
             if(!room) return;
 
+            if(room.admin === username){
+                //If admin leaves, close the room for everyone
+                io.to(roomId).emit("Admin_Left");
+                const socketsInRoom = await io.in(roomId).fetchSockets();
+                for (const s of socketsInRoom) {
+                    s.leave(roomId);
+                }
+                await Room.deleteOne({roomId});
+                return;
+            }
+
             room.participants = room.participants.filter(user => user !== username);
             await room.save();
 
