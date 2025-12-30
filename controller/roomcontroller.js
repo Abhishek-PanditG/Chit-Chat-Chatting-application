@@ -195,32 +195,50 @@ const roomController = {
         }
     },
 
-    LeaveRoom: async (io, socket, {roomId, username}) => {
-        try{
-            const room = await Room.findOne({roomId});
-            if(!room) return;
+    LeaveRoom: async (io, socket, { roomId }) => {
+    try {
+        const username = getUsernameFromSocket(socket);
+        if (!username) return;
 
-            if(room.admin === username){
-                //If admin leaves, close the room for everyone
-                io.to(roomId).emit("Admin_Left");
-                const socketsInRoom = await io.in(roomId).fetchSockets();
-                for (const s of socketsInRoom) {
-                    s.leave(roomId);
-                }
-                await Room.deleteOne({roomId});
-                return;
+        const room = await Room.findOne({ roomId });
+        if (!room) return;
+
+        //Admin Leaving
+        if (room.admin === username) {
+
+            io.to(roomId).emit("admin_left");
+
+            const socketsInRoom = await io.in(roomId).fetchSockets();
+            for (const s of socketsInRoom) {
+                s.leave(roomId);
             }
 
-            room.participants = room.participants.filter(user => user !== username);
-            await room.save();
-
-            socket.leave(roomId);
-
-            io.to(roomId).emit("participants_update", { users: room.participants, admin: room.admin });
-        } catch (err) {
-            console.error(err);
+            await Room.deleteOne({ roomId });
+            return;
         }
+
+        //Normal User Leaving
+        room.participants = room.participants.filter(u => u !== username);
+        await room.save();
+
+        socket.leave(roomId);
+
+        io.to(roomId).emit("participants_update", {
+            users: room.participants,
+            admin: room.admin
+        });
+
+        io.to(roomId).emit("message", {
+            sender: "System",
+            text: `${username} left the room.`,
+            timestamp: Date.now()
+        });
+
+    } catch (err) {
+        console.error("LeaveRoom error:", err);
     }
+}
+
 
 };
 

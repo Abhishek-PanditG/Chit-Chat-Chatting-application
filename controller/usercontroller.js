@@ -33,7 +33,11 @@ exports.registerUser = async (req, res) => {
 
     res.cookie("token", token, cookieOptions);
 
-    return res.render("login", { message: "Registration successful. Please log in." },{error: null});
+    return res.render("login", {
+    message: "Registration successful. Please log in.",
+    error: null
+    });
+
 
   } catch (error) {
     console.log(error);

@@ -18,7 +18,8 @@ module.exports = (io, socket, onlineUsers) => {
         roomController.sendMessage(io, socket, data);
     });
 
-    socket.on("Leave_Room", (data) => {
-        roomController.LeaveRoom(io, socket, data);
+    socket.on("leave_room", (data) => {
+    roomController.LeaveRoom(io, socket, data);
     });
+
 };
