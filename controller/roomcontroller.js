@@ -134,31 +134,37 @@ const roomController = {
             room.pending = room.pending.filter(p => p.socketId !== targetSocketId);
 
             if (action === "accept") {
-    if (!room.participants.includes(targetUsername)) {
-        room.participants.push(targetUsername);
-    }
+                if (!room.participants.includes(targetUsername)) {
+                    room.participants.push(targetUsername);
+                }
 
-    room.pending = room.pending.filter(p => p.socketId !== targetSocketId);
-    await room.save();
+                room.pending = room.pending.filter(p => p.socketId !== targetSocketId);
+                await room.save();
 
-    const targetSocket = io.sockets.sockets.get(targetSocketId);
+                const targetSocket = io.sockets.sockets.get(targetSocketId);
 
-    if (targetSocket) {
-        targetSocket.join(roomId);
+                if (targetSocket) {
+                    targetSocket.join(roomId);
 
-        //CRITICAL EVENTS
-        targetSocket.emit("join_success", { roomId });
-        targetSocket.emit("role_info", { role: "member" });
-        targetSocket.emit("your_username", targetUsername);
-        targetSocket.emit("participants_update", { users: room.participants, admin: room.admin });
-        targetSocket.emit("chat_history", room.messages);
-    }
+                    //CRITICAL EVENTS
+                    targetSocket.emit("join_success", { roomId });
+                    targetSocket.emit("role_info", { role: "member" });
+                    targetSocket.emit("your_username", targetUsername);
+                    targetSocket.emit("participants_update", { users: room.participants, admin: room.admin });
+                    targetSocket.emit("chat_history", room.messages);
+                }
 
-    io.to(roomId).emit("participants_update", { users: room.participants, admin: room.admin });
-}
-
-            
-
+                io.to(roomId).emit("participants_update", { users: room.participants, admin: room.admin });
+                const text = `${targetUsername} has joined the room.`;
+                const message = {
+                    sender: "Join",
+                    text,
+                    timestamp: Date.now()
+                };
+                room.messages.push(message);
+                await room.save();
+                io.to(roomId).emit("new_message", message);
+            }
             if (action === "deny") {
                 await room.save();
                 const targetSocket = io.sockets.sockets.get(targetSocketId);
@@ -219,7 +225,16 @@ const roomController = {
 
         //Normal User Leaving
         room.participants = room.participants.filter(u => u !== username);
+        const message = {
+            sender: "Leave",
+            text : `${username} has left the room.`,
+            timestamp: Date.now()
+        };
+
+        room.messages.push(message);
         await room.save();
+        io.to(roomId).emit("new_message", message);
+        socket.emit("Leave_Success");
 
         socket.leave(roomId);
 
@@ -228,11 +243,9 @@ const roomController = {
             admin: room.admin
         });
 
-        io.to(roomId).emit("message", {
-            sender: "System",
-            text: `${username} left the room.`,
-            timestamp: Date.now()
-        });
+        
+
+        
 
     } catch (err) {
         console.error("LeaveRoom error:", err);

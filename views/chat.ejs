@@ -47,9 +47,10 @@
         <div id="messages" class="flex-1 p-4 overflow-y-auto space-y-2"></div>
 
         <div class="flex p-4 gap-2 bg-gray-800">
-            <input id="msg-input"
+            <textarea id="msg-input"
+                    rows="2"
                    class="flex-1 p-2 rounded bg-gray-700 text-white"
-                   placeholder="Type message..." />
+                   placeholder="Type message..." ></textarea>
             <button id="send-btn" class="bg-indigo-600 px-4 rounded">Send</button>
         </div>
     </main>
@@ -94,23 +95,56 @@ socket.on("admin_left", () => {
     window.location.href = "/chatroom";
 });
 
+socket.on("Leave_Success", () => {
+    window.location.href = "/chatroom";
+});
+
 function addMessage(sender, text) {
+    const colorMap = {
+        Join: "green",
+        Leave: "red"
+    };
+
     const div = document.createElement("div");
+    div.style.color = colorMap[sender] || "white";
+    if(sender === "Join" || sender === "Leave") {
+        div.style.fontStyle = "italic";
+        div.innerHTML = text;
+        messagesDiv.appendChild(div);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        return;
+    }
     div.innerHTML = `<strong>${sender}:</strong> ${text}`;
     messagesDiv.appendChild(div);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
+
 // Send message
 const msgInput = document.getElementById("msg-input");
 
-document.getElementById("send-btn").onclick = () => {
-    const text = msgInput.value.trim();
-    if (!text) return;
+// Enter key or Enter + Shift for new line
+msgInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();  
+        sendMessage();        
+    }
+});
+
+function sendMessage() {
+    const rawText = msgInput.value;
+
+    const text = rawText.replace(/\n+$/, "");
+
+    if (!text.trim()) return;
 
     socket.emit("send_message", { roomId, text });
     msgInput.value = "";
-};
+}
+
+
+
+document.getElementById("send-btn").onclick = sendMessage;
 
 // ---------------- ADMIN JOIN REQUESTS ----------------
 if (isAdmin) {
@@ -138,7 +172,6 @@ function deny(username) {
 
 document.getElementById("leave-room-btn").onclick = () => {
     socket.emit("leave_room", { roomId });
-    window.location.href = "/chatroom";
 };
 
 
