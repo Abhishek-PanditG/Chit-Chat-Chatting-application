@@ -1,0 +1,22 @@
+
+services:
+  app:
+    container_name: chit-chat-app
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - mongo
+    restart: unless-stopped
+
+  mongo:
+    container_name: chit-chat-mongo
+    image: mongo:7-jammy
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
